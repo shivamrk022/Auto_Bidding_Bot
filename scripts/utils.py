@@ -107,7 +107,10 @@ def human_type(element, text: str):
 def random_scroll(page, min_px: int = 200, max_px: int = 800):
     """Scroll the page by a random amount to simulate reading."""
     px = random.randint(min_px, max_px)
-    page.evaluate(f"window.scrollBy(0, {px})")
+    try:
+        page.evaluate(f"window.scrollBy(0, {px})")
+    except Exception as e:
+        pass # Ignore execution context destroyed errors during page navigation
     human_delay(0.5, 1.5)
 
 
