@@ -2,10 +2,10 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![Playwright](https://img.shields.io/badge/Playwright-Browser_Automation-green)
-![Groq](https://img.shields.io/badge/Groq-AI_Generation-orange)
+![OpenRouter](https://img.shields.io/badge/OpenRouter-AI_Generation-orange)
 ![n8n](https://img.shields.io/badge/n8n-Workflow_Automation-red)
 
-An intelligent, autonomous bidding and lead-generation bot that finds relevant job posts on **LinkedIn** and **X (Twitter)**, uses **Groq (Llama 3)** to generate personalized, human-like comments/bids, and posts them directly using browser automation. 
+An intelligent, autonomous bidding and lead-generation bot that finds relevant job posts on **LinkedIn** and **X (Twitter)**, uses **OpenRouter (Llama 3)** to generate personalized, human-like comments/bids, and posts them directly using browser automation. 
 
 It is designed to be highly resistant to bot-detection via human-like interaction delays, persistent browser sessions, and business-hour restrictions.
 
@@ -15,8 +15,8 @@ It is designed to be highly resistant to bot-detection via human-like interactio
 
 - **Multi-Platform Navigation:** Built-in automation for both LinkedIn and X.
 - **Smart Filtering:** Analyzes posts for hiring signals (e.g., "looking for developer", "budget $", "dm me") to avoid spamming irrelevant content.
-- **AI-Powered Replies:** Utilizes the ultra-fast Groq API to draft 2-3 line, strictly personalized bids tailored to the exact requirements of the post.
-- **Anti-Spam & Deduplication:** SQLite backend tracks processed posts to ensure the bot never comments on the same post twice.
+- **AI-Powered Replies:** Utilizes the OpenRouter API to draft 2-3 line, strictly personalized bids tailored to the exact requirements of the post.
+- **Anti-Spam & Deduplication:** Excel backend tracks processed posts to ensure the bot never comments on the same post twice and provides easy readability.
 - **Human Emulation:** Intelligent typing speeds, random scrolling, randomized mouse movements, and strict daily API limits to protect your accounts.
 - **Workflow Automation (n8n):** Ready-to-go webhook/cron integration for hands-off deployment.
 
@@ -39,14 +39,14 @@ graph TD
     F --> H[Search Keywords & Extract Posts]
     G --> I[Search Keywords & Extract Tweets]
     
-    H --> J[dedup.py: Check SQLite]
+    H --> J[dedup.py: Check Excel]
     I --> J
     
-    J -- New Post --> K[ai_generator.py: Groq Llama 3]
+    J -- New Post --> K[ai_generator.py: OpenRouter Llama 3]
     J -- Already Processed --> Z
     
     K --> L[Post Personalized Comment]
-    L --> M[dedup.py: Log to DB & Increment Daily Limits]
+    L --> M[dedup.py: Log to Excel & Increment Daily Limits]
 ```
 
 ---
@@ -75,14 +75,14 @@ playwright install chromium
 Create a `.env` file in the root directory (this file is git-ignored):
 
 ```env
-GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxxxxxx
+OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxx
 LINKEDIN_EMAIL=you@email.com
 LINKEDIN_PASSWORD=yourpassword
 TWITTER_EMAIL=you@email.com
 TWITTER_PASSWORD=yourpassword
 TWITTER_USERNAME=yourhandle
 ```
-*Get your free Groq API key at: [console.groq.com](https://console.groq.com)*
+*Get your free OpenRouter API key at: [openrouter.ai](https://openrouter.ai/)*
 
 You can configure your customized **Keywords**, **Daily Limits**, and **Personal Skills** in `config/config.py`.
 

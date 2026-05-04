@@ -60,13 +60,24 @@ def login(page) -> bool:
         if username_input:
             username_input.fill(TWITTER_USERNAME)
             page.click("button:has-text('Next')")
-            human_delay(2, 3)
+            human_delay(3, 4)
 
-        pwd_input = page.wait_for_selector("input[name='password']", timeout=5000)
-        pwd_input.fill(TWITTER_PASSWORD)
-        human_delay(0.5, 1.0)
-        page.click("button[data-testid='LoginForm_Login_Button']")
-        human_delay(4, 7)
+        # Wait for the password input with a longer timeout
+        try:
+            pwd_input = page.wait_for_selector("input[name='password'], input[type='password']", timeout=10000)
+            pwd_input.fill(TWITTER_PASSWORD)
+            human_delay(0.5, 1.0)
+            
+            # Click the Log in button
+            login_btn = page.query_selector("button[data-testid='LoginForm_Login_Button']") or page.query_selector("button:has-text('Log in')")
+            if login_btn:
+                login_btn.click()
+            else:
+                page.keyboard.press("Enter")
+            human_delay(4, 7)
+        except PlaywrightTimeout:
+            log.warning("Automated login interrupted (CAPTCHA or UI block). Please log in manually in the browser window within 60 seconds.")
+            page.wait_for_url("**/home", timeout=60000)
 
         if "home" in page.url:
             log.info("Login successful.")
@@ -164,10 +175,6 @@ def post_comment(page, post: dict, comment: str) -> bool:
         return False
 
 def run():
-    if not is_business_hours():
-        log.info("Outside business hours. Twitter bot skipped.")
-        return
-
     init_db()
 
     today_count = get_daily_count("twitter")
@@ -184,6 +191,7 @@ def run():
         ctx = pw.chromium.launch_persistent_context(
             user_data_dir=TWITTER_SESSION,
             headless=False,
+            channel="msedge",
             slow_mo=50,
             args=[
                 "--disable-blink-features=AutomationControlled",

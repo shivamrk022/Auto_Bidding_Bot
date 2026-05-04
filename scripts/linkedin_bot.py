@@ -224,10 +224,6 @@ def post_comment(page, post: dict, comment: str) -> bool:
 def run():
     """Entry point — runs the full LinkedIn bot session."""
 
-    if not is_business_hours():
-        log.info("Outside business hours. LinkedIn bot skipped.")
-        return
-
     init_db()
 
     today_count = get_daily_count("linkedin")
@@ -241,11 +237,11 @@ def run():
     os.makedirs(LINKEDIN_SESSION, exist_ok=True)
 
     with sync_playwright() as pw:
-        # Persistent context keeps cookies between runs
         ctx = pw.chromium.launch_persistent_context(
             user_data_dir=LINKEDIN_SESSION,
-            headless=False,           # Use True in production/server
-            slow_mo=50,               # Extra 50ms between actions
+            headless=False,
+            channel="msedge",
+            slow_mo=50,
             args=[
                 "--disable-blink-features=AutomationControlled",
                 "--no-sandbox",

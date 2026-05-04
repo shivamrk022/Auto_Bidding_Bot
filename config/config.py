@@ -9,7 +9,7 @@ load_dotenv()
 import os
 
 # ─── API Keys ───────────────────────────────────────────────
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "your_groq_api_key_here")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "your_openrouter_api_key_here")
 
 # ─── LinkedIn Credentials ───────────────────────────────────
 LINKEDIN_EMAIL    = os.getenv("LINKEDIN_EMAIL", "your@email.com")
@@ -73,7 +73,7 @@ SEARCH_DELAY_MAX = 75
 # ─── Paths ──────────────────────────────────────────────────
 BASE_DIR      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR      = os.path.join(BASE_DIR, "data")
-DB_PATH       = os.path.join(DATA_DIR, "processed_posts.db")
+DB_PATH       = os.path.join(DATA_DIR, "processed_posts.xlsx")
 LINKEDIN_SESSION = os.path.join(DATA_DIR, "linkedin_session")
 TWITTER_SESSION  = os.path.join(DATA_DIR, "twitter_session")
 LOG_FILE      = os.path.join(DATA_DIR, "bot.log")

@@ -12,10 +12,10 @@ import os
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config.config import GROQ_API_KEY, MY_SKILLS
+from config.config import OPENROUTER_API_KEY, MY_SKILLS
 
-GROQ_URL   = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "llama3-8b-8192"   # Free, fast model on Groq
+OPENROUTER_URL   = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_MODEL = "meta-llama/llama-3-8b-instruct:free"   # Free OpenRouter model
 
 
 def generate_bid(post_content: str, platform: str = "linkedin") -> str | None:
@@ -65,17 +65,18 @@ YOUR SKILLS:
 Output ONLY the bid comment text. No quotes, no preamble, no explanation."""
 
     headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "HTTP-Referer":  "https://github.com/shivamrk022/Auto_Bidding_Bot", # Required by OpenRouter
         "Content-Type":  "application/json",
     }
 
     payload = {
-        "model":       GROQ_MODEL,
+        "model":       OPENROUTER_MODEL,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user",   "content": user_prompt},
         ],
-        "temperature": 0.92,  # High = more variety per post
+        "temperature": 0.92,
         "max_tokens":  200,
         "top_p":       0.9,
     }
@@ -83,7 +84,7 @@ Output ONLY the bid comment text. No quotes, no preamble, no explanation."""
     # Retry up to 3 times on failure
     for attempt in range(3):
         try:
-            resp = requests.post(GROQ_URL, headers=headers, json=payload, timeout=20)
+            resp = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=20)
             resp.raise_for_status()
 
             data    = resp.json()
@@ -102,14 +103,15 @@ Output ONLY the bid comment text. No quotes, no preamble, no explanation."""
         except requests.exceptions.HTTPError as e:
             if resp.status_code == 429:
                 wait = (attempt + 1) * 10  # 10s, 20s, 30s
-                print(f"  ⚠️ Groq rate limit. Waiting {wait}s...")
+                print(f"  ⚠️ OpenRouter rate limit. Waiting {wait}s...")
                 time.sleep(wait)
             else:
-                print(f"  ❌ Groq HTTP error: {e}")
+                print(f"  ❌ OpenRouter HTTP error: {e}")
+                print(f"  ❌ Response text: {resp.text}")
                 break
 
         except Exception as e:
-            print(f"  ❌ Groq error (attempt {attempt+1}): {e}")
+            print(f"  ❌ OpenRouter error (attempt {attempt+1}): {e}")
             time.sleep(5)
 
     return None
