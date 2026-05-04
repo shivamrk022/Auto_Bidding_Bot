@@ -1,0 +1,9 @@
+# ── Python dependencies ───────────────────────────────────────────────────────
+# Install with: pip install -r requirements.txt
+# Then install browsers: playwright install chromium
+
+playwright>=1.41.0          # Browser automation
+requests>=2.31.0            # HTTP calls to Groq API
+python-dotenv>=1.0.0        # Load .env credentials (optional)
+schedule>=1.2.1             # Simple Python job scheduler (if not using n8n)
+colorlog>=6.8.0             # Colored terminal output (optional)

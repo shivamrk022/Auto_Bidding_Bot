@@ -1,0 +1,21 @@
+# Virtual environment — never commit this
+venv/
+
+# Credentials — never commit this
+.env
+
+# Runtime data
+data/
+*.db
+*_session/
+*.log
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# OS files
+.DS_Store
+Thumbs.db
