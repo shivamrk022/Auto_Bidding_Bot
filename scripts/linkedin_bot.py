@@ -56,7 +56,6 @@ def is_relevant(text: str) -> bool:
     return sum(1 for kw in HIRE_SIGNALS if kw in t) >= 2
 
 
-# ─── Login ─────────────────────────────────────────────────
 def login(page) -> bool:
     """
     Log into LinkedIn. Returns True on success.
@@ -64,36 +63,34 @@ def login(page) -> bool:
     """
     log.info("Navigating to LinkedIn login page...")
     page.goto("https://www.linkedin.com/login", wait_until="domcontentloaded")
-    human_delay(2, 4)
+    human_delay(3, 5)
 
-    # If already logged in, the feed is shown directly
     if "feed" in page.url:
         log.info("Already logged in (session restored).")
         return True
 
     try:
-        page.fill("#username", LINKEDIN_EMAIL)
+        # Give 5 seconds to find the username input
+        page.fill("#username", LINKEDIN_EMAIL, timeout=5000)
         human_delay(0.8, 1.8)
 
-        pw_field = page.locator("#password")
-        pw_field.click()
-        human_delay(0.3, 0.7)
-        human_type(pw_field, LINKEDIN_PASSWORD)
+        page.fill("#password", LINKEDIN_PASSWORD)
         human_delay(0.5, 1.2)
 
         page.click("button[type='submit']")
         human_delay(4, 7)
+    except Exception as e:
+        log.warning("Automated login interrupted (Requires manual click or CAPTCHA). Please log in manually within 60 seconds.")
 
+    # Wait up to 60s for the user to manually log in and reach the feed
+    for _ in range(30):
         if "feed" in page.url or "checkpoint" in page.url:
             log.info("Login successful.")
             return True
-        else:
-            log.error(f"Login failed. Current URL: {page.url}")
-            return False
+        time.sleep(2)
 
-    except Exception as e:
-        log.error(f"Login exception: {e}")
-        return False
+    log.error(f"Login failed. Current URL: {page.url}")
+    return False
 
 
 # ─── Search ────────────────────────────────────────────────

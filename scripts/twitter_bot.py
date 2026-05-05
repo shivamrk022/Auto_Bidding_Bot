@@ -46,14 +46,11 @@ def login(page) -> bool:
 
     try:
         # Check if login is needed
-        email_input = page.query_selector("input[autocomplete='username']")
-        if not email_input:
-            email_input = page.wait_for_selector("input[autocomplete='username']", timeout=10000)
-            
+        email_input = page.wait_for_selector("input[autocomplete='username']", timeout=5000)
         email_input.fill(TWITTER_EMAIL)
         human_delay(0.5, 1.0)
         page.click("button:has-text('Next')")
-        human_delay(2, 3)
+        human_delay(3, 4)
 
         # Sometimes it asks for username
         username_input = page.query_selector("input[data-testid='ocfEnterTextTextInput']")
@@ -63,32 +60,29 @@ def login(page) -> bool:
             human_delay(3, 4)
 
         # Wait for the password input with a longer timeout
-        try:
-            pwd_input = page.wait_for_selector("input[name='password'], input[type='password']", timeout=10000)
-            pwd_input.fill(TWITTER_PASSWORD)
-            human_delay(0.5, 1.0)
-            
-            # Click the Log in button
-            login_btn = page.query_selector("button[data-testid='LoginForm_Login_Button']") or page.query_selector("button:has-text('Log in')")
-            if login_btn:
-                login_btn.click()
-            else:
-                page.keyboard.press("Enter")
-            human_delay(4, 7)
-        except PlaywrightTimeout:
-            log.warning("Automated login interrupted (CAPTCHA or UI block). Please log in manually in the browser window within 60 seconds.")
-            page.wait_for_url("**/home", timeout=60000)
+        pwd_input = page.wait_for_selector("input[name='password'], input[type='password']", timeout=5000)
+        pwd_input.fill(TWITTER_PASSWORD)
+        human_delay(0.5, 1.0)
+        
+        # Click the Log in button
+        login_btn = page.query_selector("button[data-testid='LoginForm_Login_Button']") or page.query_selector("button:has-text('Log in')")
+        if login_btn:
+            login_btn.click()
+        else:
+            page.keyboard.press("Enter")
+        human_delay(4, 7)
+    except Exception:
+        log.warning("Automated login interrupted (CAPTCHA or UI block). Please log in manually in the browser window within 5 minutes.")
 
+    # Loop for 300 seconds checking if user reached the home page manually
+    for _ in range(150):
         if "home" in page.url:
             log.info("Login successful.")
             return True
-        else:
-            log.error(f"Login failed. Current URL: {page.url}")
-            return False
+        time.sleep(2)
 
-    except Exception as e:
-        log.error(f"Login exception: {e}")
-        return False
+    log.error(f"Login failed. Current URL: {page.url}")
+    return False
 
 def search_posts(page, keyword: str) -> list[dict]:
     encoded = keyword.replace(" ", "%20")
