@@ -114,9 +114,9 @@ def search_posts(page, keyword: str) -> list[dict]:
     human_delay(3, 6)
 
     # Scroll down to load more results
-    for _ in range(4):
+    for _ in range(1):
         random_scroll(page, 400, 900)
-        human_delay(1, 2.5)
+        human_delay(0.5, 1.0)
 
     results = []
     # LinkedIn wraps each post in this container or uses [data-urn] for posts

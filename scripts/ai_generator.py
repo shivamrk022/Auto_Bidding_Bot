@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config.config import OPENROUTER_API_KEY, MY_SKILLS
 
 OPENROUTER_URL   = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL = "meta-llama/llama-3-8b-instruct:free"   # Free OpenRouter model
+OPENROUTER_MODEL = "google/gemini-2.0-flash-lite-preview-02-05:free"   # Faster, more reliable free model
 
 
 def generate_bid(post_content: str, platform: str = "linkedin") -> str | None:
@@ -32,10 +32,10 @@ def generate_bid(post_content: str, platform: str = "linkedin") -> str | None:
 
     # Twitter needs shorter replies (280-char limit), LinkedIn can be longer
     if platform == "twitter":
-        length_rule = "2–3 SHORT sentences. MUST be under 240 characters total."
+        length_rule = "1-2 SHORT sentences. MUST be under 240 characters total. NO line breaks or paragraphs."
         tone_rule   = "Casual and direct. No formal language."
     else:
-        length_rule = "3–4 sentences. Medium length, not too short or too long."
+        length_rule = "2-3 short sentences. Extremely concise, single paragraph only. NO line breaks."
         tone_rule   = "Friendly and professional. Show genuine interest."
 
     system_prompt = f"""You are an expert freelancer writing personalized bid comments on social media.
@@ -97,21 +97,21 @@ Output ONLY the bid comment text. No quotes, no preamble, no explanation."""
             if platform == "twitter" and len(comment) > 270:
                 comment = comment[:267] + "..."
 
-            print(f"  🤖 AI generated: {comment[:80]}...")
+            print(f"  [AI generated]: {comment[:80]}...")
             return comment
 
         except requests.exceptions.HTTPError as e:
             if resp.status_code == 429:
                 wait = (attempt + 1) * 10  # 10s, 20s, 30s
-                print(f"  ⚠️ OpenRouter rate limit. Waiting {wait}s...")
+                print(f"  [WARNING] OpenRouter rate limit. Waiting {wait}s...")
                 time.sleep(wait)
             else:
-                print(f"  ❌ OpenRouter HTTP error: {e}")
-                print(f"  ❌ Response text: {resp.text}")
+                print(f"  [ERROR] OpenRouter HTTP error: {e}")
+                print(f"  [ERROR] Response text: {resp.text}")
                 break
 
         except Exception as e:
-            print(f"  ❌ OpenRouter error (attempt {attempt+1}): {e}")
+            print(f"  [ERROR] OpenRouter error (attempt {attempt+1}): {e}")
             time.sleep(5)
 
     return None

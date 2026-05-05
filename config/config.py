@@ -49,9 +49,10 @@ MY_SKILLS = """
 - Years of experience: 5+, worked with 50+ clients
 """
 
+import random
 # ─── Daily Limits (CRITICAL — keep these low) ───────────────
-LINKEDIN_DAILY_LIMIT = 12   # Max comments per day on LinkedIn
-TWITTER_DAILY_LIMIT  = 7    # Max replies per day on X/Twitter
+LINKEDIN_DAILY_LIMIT = random.randint(10, 15)   # Max comments per day on LinkedIn (10-15)
+TWITTER_DAILY_LIMIT  = random.randint(5, 10)    # Max replies per day on X/Twitter (5-10)
 
 # ─── Business Hours (24h format, your local timezone) ───────
 BUSINESS_HOURS_START = 9    # 9 AM

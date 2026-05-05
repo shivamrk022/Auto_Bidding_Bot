@@ -36,33 +36,54 @@ def is_relevant(text: str) -> bool:
     return sum(1 for kw in HIRE_SIGNALS if kw in t) >= 2
 
 def login(page) -> bool:
-    log.info("Navigating to Twitter/X login page...")
-    page.goto("https://x.com/i/flow/login", wait_until="domcontentloaded")
-    human_delay(3, 5)
-
-    if "home" in page.url:
+    """
+    Handle Twitter's login flow, detecting existing sessions and navigating the 
+    multi-step login process (email -> username -> password).
+    """
+    log.info("Checking login status...")
+    
+    # 1. Detect if already logged in and skip login
+    # Go to home first to check if session is active
+    page.goto("https://x.com/home", wait_until="domcontentloaded")
+    
+    try:
+        # Wait up to 10 seconds for the home tab link to prove we're fully logged in
+        page.wait_for_selector("[data-testid='AppTabBar_Home_Link']", timeout=10000)
         log.info("Already logged in (session restored).")
         return True
+    except PlaywrightTimeout:
+        log.info("Session not active or expired. Proceeding to login flow...")
+
+    log.info("Navigating to Twitter/X login page...")
+    page.goto("https://x.com/i/flow/login", wait_until="domcontentloaded")
+    human_delay(4, 6)
 
     try:
-        # Check if login is needed
-        email_input = page.wait_for_selector("input[autocomplete='username']", timeout=5000)
+        # 2. Step 1: Email
+        log.info("Entering email...")
+        email_input = page.wait_for_selector("input[autocomplete='username']", timeout=10000)
         email_input.fill(TWITTER_EMAIL)
-        human_delay(0.5, 1.0)
+        human_delay(2, 4)
+        
+        # Click Next
         page.click("button:has-text('Next')")
-        human_delay(3, 4)
+        human_delay(3, 5)
 
-        # Sometimes it asks for username
+        # 3. Step 2: Username verification
+        # Twitter often asks for username/phone to verify suspicious login before password
         username_input = page.query_selector("input[data-testid='ocfEnterTextTextInput']")
         if username_input:
+            log.info("Twitter asking for username verification...")
             username_input.fill(TWITTER_USERNAME)
-            page.click("button:has-text('Next')")
-            human_delay(3, 4)
+            human_delay(2, 4)
+            page.click("button:has-text('Next'), button[data-testid='ocfEnterTextNextButton']")
+            human_delay(3, 5)
 
-        # Wait for the password input with a longer timeout
-        pwd_input = page.wait_for_selector("input[name='password'], input[type='password']", timeout=5000)
+        # 4. Step 3: Password
+        log.info("Entering password...")
+        pwd_input = page.wait_for_selector("input[name='password'], input[type='password']", timeout=10000)
         pwd_input.fill(TWITTER_PASSWORD)
-        human_delay(0.5, 1.0)
+        human_delay(2, 4)
         
         # Click the Log in button
         login_btn = page.query_selector("button[data-testid='LoginForm_Login_Button']") or page.query_selector("button:has-text('Log in')")
@@ -70,16 +91,30 @@ def login(page) -> bool:
             login_btn.click()
         else:
             page.keyboard.press("Enter")
-        human_delay(4, 7)
-    except Exception:
-        log.warning("Automated login interrupted (CAPTCHA or UI block). Please log in manually in the browser window within 5 minutes.")
+        human_delay(5, 7)
+        
+    except Exception as e:
+        log.warning(f"Automated login interrupted (CAPTCHA, UI block, or timeout).")
+        log.info("If running in headless=False, please log in manually. Waiting for 300s...")
+        # Loop for 300 seconds to allow manual login if needed
+        for _ in range(150):
+            if "home" in page.url or page.query_selector("[data-testid='AppTabBar_Home_Link']"):
+                break
+            time.sleep(2)
 
-    # Loop for 300 seconds checking if user reached the home page manually
-    for _ in range(150):
-        if "home" in page.url:
-            log.info("Login successful.")
-            return True
-        time.sleep(2)
+    # 5. Confirm home feed is loaded after login attempt
+    log.info("Confirming home feed is loaded...")
+    try:
+        page.wait_for_url("**/home", timeout=15000)
+    except PlaywrightTimeout:
+        # Navigate explicitly in case of weird redirects
+        page.goto("https://x.com/home", wait_until="domcontentloaded")
+        human_delay(3, 5)
+
+    # Final check
+    if "home" in page.url or page.query_selector("[data-testid='AppTabBar_Home_Link']"):
+        log.info("Login successful. Home feed confirmed.")
+        return True
 
     log.error(f"Login failed. Current URL: {page.url}")
     return False
@@ -89,11 +124,23 @@ def search_posts(page, keyword: str) -> list[dict]:
     url = f"https://x.com/search?q={encoded}&f=live"
     log.info(f"Searching: '{keyword}'")
     page.goto(url, wait_until="domcontentloaded")
+    
+    # Wait explicitly for tweets to appear
+    try:
+        page.wait_for_selector("article[data-testid='tweet']", timeout=15000)
+    except PlaywrightTimeout:
+        log.warning(f"Timeout waiting for tweets for keyword: {keyword}")
+        try:
+            body_text = page.evaluate("() => document.body.innerText")
+            log.warning(f"Page text at timeout: {body_text[:500]}...")
+        except Exception:
+            pass
+        
     human_delay(3, 6)
 
-    for _ in range(4):
+    for _ in range(1):
         random_scroll(page, 400, 900)
-        human_delay(1, 2.5)
+        human_delay(0.5, 1.0)
 
     results = []
     cards = page.query_selector_all("article[data-testid='tweet']")
@@ -180,11 +227,16 @@ def run():
     log.info(f"Starting Twitter bot. Posted today: {today_count}. Remaining budget: {remaining}.")
 
     os.makedirs(TWITTER_SESSION, exist_ok=True)
+    
+    # Always run visibly to see the browser actions
+    headless_mode = False
+    log.info(f"Headless mode: {headless_mode}")
 
     with sync_playwright() as pw:
+        # Launch persistent context
         ctx = pw.chromium.launch_persistent_context(
             user_data_dir=TWITTER_SESSION,
-            headless=False,
+            headless=headless_mode,
             channel="msedge",
             slow_mo=50,
             args=[
@@ -197,19 +249,17 @@ def run():
                       "height": random.randint(800, 900)},
         )
 
-        page = ctx.new_page()
+        # Context comes with one page by default
+        page = ctx.pages[0] if ctx.pages else ctx.new_page()
 
         page.add_init_script(
             "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
         )
 
-        page.goto("https://x.com", wait_until="domcontentloaded")
-        human_delay(2, 4)
-
-        if "home" not in page.url:
-            if not login(page):
-                ctx.close()
-                return
+        # Call login function which now handles checking existing session and navigating to home
+        if not login(page):
+            ctx.close()
+            return
 
         posted = 0
         keywords = KEYWORDS.copy()
